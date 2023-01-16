@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+
+    encoder:
+        container_name: encoder
+        build: .
+        environment:
+            - ENCODER_CPU=true
+            - EXIT_ON_FINISH=true
+        volumes:
+            - "./data-local:/media/encoder"
+            - "/media/Ramdisk:/media/workdir"
