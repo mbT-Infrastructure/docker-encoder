@@ -43,16 +43,16 @@ while true; do
             sleep 600
         fi
     else
-        echo "prepare encode of \"${WORKER_FILE}\""
+        echo "Prepare encode of \"${WORKER_FILE}\""
         WORKER_FILE_BASENAME="$(basename "${WORKER_FILE}")"
         WORKER_FILE_RELATIVE_FOLDER="$(dirname "${WORKER_FILE#${INPUT_DIR}/}")"
         mv "$WORKER_FILE" "${WORKER_INPUT_DIR}/${WORKER_FILE_BASENAME}"
         cp "${WORKER_INPUT_DIR}/${WORKER_FILE_BASENAME}" "${WORKDIR}/${WORKER_FILE_BASENAME}"
         encode.sh --replace $ARGUMENTS_FOR_ENCODER "${WORKDIR}/${WORKER_FILE_BASENAME}"
         mv "${WORKDIR}/${WORKER_FILE_BASENAME}" "${WORKER_OUTPUT_DIR}/${WORKER_FILE_BASENAME}"
-        mkdir "${OUTPUT_DIR}/${WORKER_FILE_RELATIVE_FOLDER}"
+        mkdir --parents "${OUTPUT_DIR}/${WORKER_FILE_RELATIVE_FOLDER}"
         mv "${WORKER_OUTPUT_DIR}/${WORKER_FILE_BASENAME}" "${OUTPUT_DIR}/${WORKER_FILE_RELATIVE_FOLDER}/${WORKER_FILE_BASENAME}"
         rm "${WORKER_INPUT_DIR}/${WORKER_FILE_BASENAME}"
-        echo "finished encode of \"${WORKER_FILE}\""
+        echo "Finished encode of \"${WORKER_FILE}\""
     fi
 done
