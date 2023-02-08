@@ -6,8 +6,11 @@ services:
         container_name: encoder
         build: .
         environment:
-            - ENCODER_CPU=true
+            - ENCODER_CPU=false
             - EXIT_ON_FINISH=true
+            - WORKER_ID=dev
         volumes:
             - "./data-local:/media/encoder"
             - "/media/Ramdisk:/media/workdir"
+        devices:
+            - "/dev/dri/renderD128"
