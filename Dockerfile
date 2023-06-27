@@ -1,7 +1,6 @@
 FROM madebytimo/base
 
-COPY apt-sources.list /etc/apt/sources.list
-RUN install-autonomous.sh install ffmpeg Scripts \
+RUN install-autonomous.sh install FFmpeg Scripts \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
