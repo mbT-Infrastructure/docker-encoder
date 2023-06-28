@@ -1,4 +1,4 @@
-FROM madebytimo/base
+FROM madebytimo/python
 
 RUN install-autonomous.sh install FFmpeg Scripts \
     && rm -rf /var/lib/apt/lists/*
