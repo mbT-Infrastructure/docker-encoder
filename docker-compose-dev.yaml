@@ -11,6 +11,5 @@ services:
             - WORKER_ID=dev
         volumes:
             - "./data-local:/media/encoder"
-            - "/media/Ramdisk:/media/workdir"
         devices:
             - "/dev/dri/renderD128"
