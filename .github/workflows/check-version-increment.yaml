@@ -1,0 +1,33 @@
+name: "Check version increment"
+
+on:
+    pull_request:
+        branches:
+            - main
+
+jobs:
+    check:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout new
+              uses: actions/checkout@v3
+              with:
+                  path: new
+            - name: Checkout old
+              uses: actions/checkout@v3
+              with:
+                  path: old
+                  ref: refs/heads/main
+            - name: Setup Node.js
+              uses: actions/setup-node@v3
+            - name: Download script
+              run: |
+                curl --silent --output check-version-increment.sh \
+                    https://gitlab.com/madebyTimo/scripts-development/-/raw/main/scripts/check-version-increment.sh && \
+                    chmod +x check-version-increment.sh
+            - name: Test version increment
+              if: startsWith(github.ref, '/refs/heads/feature/') || startsWith(github.ref, '/refs/heads/bugfix/')
+              run: ./check-version-increment.sh --file --new new/Version.txt --old old/Version.txt
+            - name: Test version same
+              if: ${{ !( startsWith(github.ref, '/refs/heads/feature/') || startsWith(github.ref, '/refs/heads/bugfix/') ) }}
+              run: "[[ $(cat new/Version.txt) == $(cat old/Version.txt) ]]"

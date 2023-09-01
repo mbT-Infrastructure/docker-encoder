@@ -1,0 +1,59 @@
+name: 'Static code analysis'
+
+on:
+    push:
+    workflow_dispatch:
+
+jobs:
+    analyze:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Get cache
+              uses: actions/cache/restore@v3
+              with:
+                  path: /media/saved-cache
+                  key: docker-encoder-build-cache-${{ github.run_id }}
+                  restore-keys: docker-encoder-build-cache
+            - name: Import cache
+              run: |
+                  cat | \
+                      docker run --pull always --rm \
+                          --volume "/media/saved-cache:/media/saved-cache" \
+                          --volume "docker-encoder-build-cache:/media/build-cache" \
+                          madebytimo/scripts \
+                          bash \
+                      << EOF
+                  cd /media
+                  if (ls /media/saved-cache/*.tar.zst); then
+                      compress.sh --decompress /media/saved-cache/*.tar.zst
+                      rm /media/saved-cache/*.tar.zst
+                  fi
+                  EOF
+            - name: Checkout
+              uses: actions/checkout@v3
+            - name: Download script
+              run: |
+                curl --silent --output /usr/local/bin/static-code-analysis.sh \
+                    https://gitlab.com/madebyTimo/scripts-development/-/raw/main/scripts/static-code-analysis.sh && \
+                    chmod +x /usr/local/bin/static-code-analysis.sh
+            - name: Analyze
+              run: static-code-analysis.sh
+              env:
+                  SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+                  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+            - name: Publish result
+              if: success() || failure()
+              run: cat test-results/*.txt >> $GITHUB_STEP_SUMMARY
+            - name: Export cache
+              run: |
+                  docker run --pull always --rm \
+                      --volume "/media/saved-cache:/media/saved-cache" \
+                      --volume "docker-encoder-build-cache:/media/build-cache" \
+                      madebytimo/scripts \
+                      compress.sh --fast --output /media/saved-cache/build-cache /media/build-cache
+                  sudo chown -R "$(whoami)" /media/saved-cache
+            - name: Set cache
+              uses: actions/cache/save@v3
+              with:
+                  path: /media/saved-cache
+                  key: docker-encoder-build-cache-${{ github.run_id }}

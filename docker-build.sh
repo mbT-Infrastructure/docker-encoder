@@ -1,38 +1,41 @@
 #!/usr/bin/env bash
 set -e
 
-BUILD_ARGUMENTS=""
+BUILD_ARGUMENTS=()
 DEPENDENCIES=(docker)
 UPDATE_BASE=false
 REPOSIITORY_NAME="docker-encoder"
-VERSION=""
 
 # help message
 for ARGUMENT in "$@"; do
     if [ "$ARGUMENT" == "-h" ] || [ "$ARGUMENT" == "--help" ]; then
         echo "usage: $(basename "$0") [ARGUMENT]"
-        echo "Builds the docker image from the Dockerfile." 
+        echo "Builds the docker image from the Dockerfile."
         echo "ARGUMENT can be"
+        echo "--platform [amd64|arm64|arm] build only specified platform"
         echo "--push push the build"
-        echo "--update-base only build if newer base image available."
+        echo "--update-base only build if newer base image available"
         exit
     fi
 done
 
 # check dependencies
-for cmd in ${DEPENDENCIES[@]}; do
-    if [[ -z "$(command -v $cmd)" ]]; then
-        echo "$cmd is missing!"
+for CMD in "${DEPENDENCIES[@]}"; do
+    if [[ -z "$(which "$CMD")" ]]; then
+        echo "\"${CMD}\" is missing!"
         exit 1
     fi
 done
 
 # check arguments
 while [[ -n "$1" ]]; do
-    if [[ "$1" = "--update-base" ]]; then
+    if [[ "$1" = "--platform" ]]; then
+        shift
+        BUILD_ARGUMENTS+=("--set" "default.platform=$1")
+    elif [[ "$1" = "--update-base" ]]; then
         UPDATE_BASE=true
     elif [[ "$1" = "--push" ]]; then
-        BUILD_ARGUMENTS+=" --push"
+        BUILD_ARGUMENTS+=("--push")
     else
         echo "Unknown argument: \"$1\""
         exit 1
@@ -57,4 +60,4 @@ fi
 VERSION="$(cat Version.txt)"
 
 export BASE_IMAGE BASE_IMAGE_DATE IMAGE VERSION
-docker buildx bake --file docker-bake.hcl $BUILD_ARGUMENTS
+docker buildx bake --file docker-bake.hcl "${BUILD_ARGUMENTS[@]}"
