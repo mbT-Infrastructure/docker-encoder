@@ -7,7 +7,7 @@ mkdir --parents /media/encoder/output
 mkdir --parents /media/workdir
 
 if [[ -z "$WORKER_ID" ]]; then
-    export WORKER_ID="$SRANDOM"
+    export WORKER_ID="$HOSTNAME"
 fi
 
 exec "$@"
