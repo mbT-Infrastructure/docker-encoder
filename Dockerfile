@@ -23,7 +23,7 @@ RUN mkdir FFmpeg/build \
     && ../configure --disable-doc --enable-gpl --enable-libass --enable-libfreetype \
     --enable-libmp3lame --enable-libopus --enable-libsvtav1 --enable-libvorbis --enable-libvpx \
     --enable-libx264 --enable-libx265 \
-    && make -C FFmpeg/build --jobs "$(($(nproc) * 2))"
+    && make --jobs "$(($(nproc) * 2))"
 
 
 FROM madebytimo/python
