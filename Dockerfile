@@ -14,7 +14,7 @@ RUN download.sh --name svt-av1.tar.gz \
     && git -C FFmpeg am "$PWD/SVT-AV1/ffmpeg_plugin/n6.0"/*.patch
 
 RUN cd SVT-AV1/Build \
-    && cmake .. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
+    && cmake .. -G"Unix Makefiles" -DENABLE_AVX512=ON -DCMAKE_BUILD_TYPE=Release \
     && make --jobs "$(nproc)" \
     && make install
 
@@ -22,8 +22,8 @@ RUN mkdir FFmpeg/build \
     && cd FFmpeg/build \
     && ../configure --disable-doc --enable-gpl --enable-libass --enable-libfreetype \
     --enable-libmp3lame --enable-libopus --enable-libsvtav1 --enable-libvorbis --enable-libvpx \
-    --enable-libx264 --enable-libx265
-RUN make -C FFmpeg/build --jobs "$(($(nproc) * 2))"
+    --enable-libx264 --enable-libx265 \
+    && make -C FFmpeg/build --jobs "$(($(nproc) * 2))"
 
 
 FROM madebytimo/python
