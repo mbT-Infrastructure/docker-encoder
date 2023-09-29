@@ -1,6 +1,6 @@
 FROM madebytimo/builder AS builder
 
-RUN apt update -qq && apt install -y -qq libass-dev libopus-dev libmp3lame-dev \
+RUN apt update -qq && apt install -y -qq libass-dev libdav1d-dev libopus-dev libmp3lame-dev \
     libvpx-dev libva-dev libvdpau-dev libvorbis-dev libx264-dev libx265-dev texinfo wget && \
     rm -rf /var/lib/apt/lists/*
 
@@ -20,9 +20,9 @@ RUN cd SVT-AV1/Build \
 
 RUN mkdir FFmpeg/build \
     && cd FFmpeg/build \
-    && ../configure --disable-doc --enable-gpl --enable-libass --enable-libfreetype \
-    --enable-libmp3lame --enable-libopus --enable-libsvtav1 --enable-libvorbis --enable-libvpx \
-    --enable-libx264 --enable-libx265 \
+    && ../configure --disable-doc --enable-gpl --enable-libass --enable-libdav1d \
+    --enable-libfreetype --enable-libmp3lame --enable-libopus --enable-libsvtav1 \
+    --enable-libvorbis --enable-libvpx --enable-libx264 --enable-libx265 \
     && make --jobs "$(($(nproc) * 2))"
 
 
