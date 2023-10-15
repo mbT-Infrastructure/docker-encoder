@@ -36,6 +36,7 @@ WORKDIR /app
 COPY encoder-worker.sh .
 
 COPY --from=builder /root/builder/FFmpeg/build/ffmpeg /usr/local/bin/
+COPY --from=builder /root/builder/FFmpeg/build/ffprobe /usr/local/bin/
 COPY --from=builder /root/builder/SVT-AV1/Bin/Release/* /usr/lib/
 
 ENV ENCODER_CPU=false

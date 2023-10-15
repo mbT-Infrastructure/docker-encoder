@@ -39,7 +39,7 @@ fi
 WORKER_FILE=""
 while true; do
     WORKER_FILE="$(find "$INPUT_DIR" "(" -name "*.mkv" -or -name "*.mp4" ")" -print -or \
-        -path "${INPUT_DIR}/.working" -prune | head --lines 1)"
+        -path "${INPUT_DIR}/.working" -prune | tail --lines 1)"
     if [[ -z "$WORKER_FILE" ]]; then
         echo "No worker file found."
         if [[ "$EXIT_ON_FINISH" == true ]]; then
@@ -57,6 +57,11 @@ while true; do
         fi
         WORKER_FILE_BASENAME="$(basename "${WORKER_FILE}")"
         WORKER_FILE_RELATIVE_FOLDER="$(dirname "${WORKER_FILE#"${INPUT_DIR}/"}")"
+        if [[ "$WORKER_FILE_RELATIVE_FOLDER" == audio?(/*) ]]; then
+            ARGUMENTS_FOR_ENCODER+=(--audio)
+            WORKER_FILE_RELATIVE_FOLDER="${WORKER_FILE_RELATIVE_FOLDER#audio}"
+            WORKER_FILE_RELATIVE_FOLDER="${WORKER_FILE_RELATIVE_FOLDER#/}"
+        fi
         if [[ "$WORKER_FILE_RELATIVE_FOLDER" == low-quality?(/*) ]]; then
             ARGUMENTS_FOR_ENCODER+=(--low-quality)
             WORKER_FILE_RELATIVE_FOLDER="${WORKER_FILE_RELATIVE_FOLDER#low-quality}"
