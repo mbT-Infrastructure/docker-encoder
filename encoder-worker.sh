@@ -38,7 +38,7 @@ fi
 
 WORKER_FILE=""
 while true; do
-    WORKER_FILE="$(find "$INPUT_DIR" "(" -name "*.mkv" -or -name "*.mp4" ")" -print -or \
+    WORKER_FILE="$(find "$INPUT_DIR" -type f -print -or \
         -path "${INPUT_DIR}/.working" -prune | tail --lines 1)"
     if [[ -z "$WORKER_FILE" ]]; then
         echo "No worker file found."
@@ -81,11 +81,11 @@ while true; do
         nice --adjustment "$NICENESS_ADJUSTMENT" \
             encode.sh --replace "${ARGUMENTS_FOR_ENCODER[@]}" "${WORKDIR}/${WORKER_FILE_BASENAME}"
         mkdir --parents "$WORKER_OUTPUT_DIR"
-        mv "${WORKDIR}/${WORKER_FILE_BASENAME}" "${WORKER_OUTPUT_DIR}/${WORKER_FILE_BASENAME}"
+        mv "${WORKDIR}/${WORKER_FILE_BASENAME%.*}."* "$WORKER_OUTPUT_DIR"
         mkdir --parents "${OUTPUT_DIR}/${WORKER_FILE_RELATIVE_FOLDER}"
-        mv "${WORKER_OUTPUT_DIR}/${WORKER_FILE_BASENAME}" \
-            "${OUTPUT_DIR}/${WORKER_FILE_RELATIVE_FOLDER}/${WORKER_FILE_BASENAME}"
-        rm "${WORKER_INPUT_DIR}/${WORKER_FILE_BASENAME}"
+        mv "${WORKER_OUTPUT_DIR}/${WORKER_FILE_BASENAME%.*}."* \
+            "${OUTPUT_DIR}/${WORKER_FILE_RELATIVE_FOLDER}"
+        rm "${WORKER_INPUT_DIR}/${WORKER_FILE_BASENAME%.*}."*
         cleanup
         echo "Finished encode of \"${WORKER_FILE}\""
     fi

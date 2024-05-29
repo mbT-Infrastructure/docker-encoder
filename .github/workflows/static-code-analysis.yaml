@@ -9,33 +9,30 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Get cache
-              uses: actions/cache/restore@v3
+              uses: actions/cache/restore@v4
               with:
                   path: /media/saved-cache
                   key: docker-encoder-build-cache-${{ github.run_id }}
                   restore-keys: docker-encoder-build-cache
             - name: Import cache
               run: |
-                  cat | \
+                  if (ls /media/saved-cache/*.tar.zst); then
                       docker run --pull always --rm \
                           --volume "/media/saved-cache:/media/saved-cache" \
                           --volume "docker-encoder-build-cache:/media/build-cache" \
+                          --workdir /media \
                           madebytimo/scripts \
-                          bash \
-                      << EOF
-                  cd /media
-                  if (ls /media/saved-cache/*.tar.zst); then
-                      compress.sh --decompress /media/saved-cache/*.tar.zst
+                          compress.sh --decompress /media/saved-cache/*.tar.zst
                       rm /media/saved-cache/*.tar.zst
                   fi
-                  EOF
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
             - name: Download script
               run: |
                 curl --silent --output /usr/local/bin/static-code-analysis.sh \
-                    https://gitlab.com/madebyTimo/scripts-development/-/raw/main/scripts/static-code-analysis.sh && \
-                    chmod +x /usr/local/bin/static-code-analysis.sh
+                    https://gitlab.com/madebyTimo/scripts-development/-/raw/main/scripts/\
+                static-code-analysis.sh \
+                    && chmod +x /usr/local/bin/static-code-analysis.sh
             - name: Analyze
               run: static-code-analysis.sh
               env:
@@ -52,8 +49,17 @@ jobs:
                       madebytimo/scripts \
                       compress.sh --fast --output /media/saved-cache/build-cache /media/build-cache
                   sudo chown -R "$(whoami)" /media/saved-cache
+            - name: Delete old caches
+              env:
+                GH_TOKEN: ${{ github.token }}
+              run: |
+                  for CACHE in $(gh cache list --key Factory-build-cache --ref ${{ github.ref}} \
+                      | cut --fields 1); do
+                      echo "Deleting cache \"$CACHE\"."
+                      gh cache delete "$CACHE"
+                  done
             - name: Set cache
-              uses: actions/cache/save@v3
+              uses: actions/cache/save@v4
               with:
                   path: /media/saved-cache
                   key: docker-encoder-build-cache-${{ github.run_id }}

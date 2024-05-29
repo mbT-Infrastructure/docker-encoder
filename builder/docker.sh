@@ -4,8 +4,9 @@ set -e
 BUILD_ARGUMENTS=()
 DEPENDENCIES=(docker)
 UPDATE_BASE=false
+PLATFORMS=(amd64 arm64)
 REGISTRY_USER="madebytimo"
-REPOSIITORY_NAME="docker-encoder"
+APPLICATION_NAME="encoder"
 
 # help message
 for ARGUMENT in "$@"; do
@@ -13,9 +14,9 @@ for ARGUMENT in "$@"; do
         echo "usage: $(basename "$0") [ARGUMENT]"
         echo "Builds the docker image from the Dockerfile."
         echo "ARGUMENT can be"
-        echo "--platform [amd64|arm64|arm] build only specified platform"
-        echo "--push push the build"
-        echo "--update-base only build if newer base image available"
+        echo "--platform [amd64|arm64|arm] Build only for specified platform."
+        echo "--publish Push the build."
+        echo "--update-base Only build if newer base image is available."
         exit
     fi
 done
@@ -32,23 +33,26 @@ done
 while [[ -n "$1" ]]; do
     if [[ "$1" = "--platform" ]]; then
         shift
-        BUILD_ARGUMENTS+=("--set" "default.platform=$1")
+        PLATFORMS=("$1")
     elif [[ "$1" = "--update-base" ]]; then
         UPDATE_BASE=true
-    elif [[ "$1" = "--push" ]]; then
+    elif [[ "$1" = "--publish" ]]; then
         BUILD_ARGUMENTS+=("--push")
-    else
-        echo "Unknown argument: \"$1\""
-        exit 1
     fi
     shift
 done
 
-BASE_IMAGE="$(tac Dockerfile | grep --max-count=1 "FROM" | cut -d" " -f2)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+VERSION="$(cat Version.txt)"
+
+cd "$PROJECT_DIR"
+mkdir --parents builds
+
+BASE_IMAGE="$(tac Dockerfile | grep --max-count=1 "^FROM" | cut -d" " -f2)"
 docker pull "$BASE_IMAGE"
 BASE_IMAGE_DATE="$(docker image inspect --format="{{ .Created }}" "$BASE_IMAGE" | cut -d "T" -f1)"
 echo "Base image is $BASE_IMAGE from $BASE_IMAGE_DATE"
-IMAGE="${REGISTRY_USER}/${REPOSIITORY_NAME#docker-}"
+IMAGE="${REGISTRY_USER}/${APPLICATION_NAME}"
 if [[ "$UPDATE_BASE" == true ]]; then
     docker pull "$IMAGE"
     PUSHED_IMAGE_DATE="$(docker image inspect --format="{{ .Created }}" "$IMAGE" | cut -d "T" -f1)"
@@ -58,7 +62,10 @@ if [[ "$UPDATE_BASE" == true ]]; then
         exit;
     fi
 fi
-VERSION="$(cat Version.txt)"
 
-export BASE_IMAGE BASE_IMAGE_DATE IMAGE VERSION
-docker buildx bake --file docker-bake.hcl "${BUILD_ARGUMENTS[@]}"
+PLATFORMS_STRING="${PLATFORMS[*]}"
+BUILD_ARGUMENTS+=(--platform "${PLATFORMS_STRING// /,}")
+
+docker buildx build "${BUILD_ARGUMENTS[@]}" \
+    --output type=oci,dest=builds/"${IMAGE//"/"/-}-${VERSION}.tar" --tag "${IMAGE}:latest" \
+    --tag "${IMAGE}:${VERSION}" --tag "${IMAGE}:${VERSION}-base-${BASE_IMAGE_DATE}" .

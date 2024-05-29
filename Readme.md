@@ -11,11 +11,11 @@ The input folder contains some special folder which correspont to arguments for 
 - `ENCODER_CPU`
     - Set to `true` to enable cpu encoding.
 - `EXIT_ON_FINISH`
-    - Set to `true` to enable exit on finish which means exit if no more files to encode are present.
+    - Set to `true` to exit if no more files to encode are present.
 - `NICENESS_ADJUSTMENT`
-    - Set a custom niceness adjustment, default `0`.
+    - Set a custom niceness adjustment, default `19`.
 - `WORKER_ID`
-    - Id of the worker, default iis random.
+    - Id of the worker, default is random.
 
 
 ## Volumes
