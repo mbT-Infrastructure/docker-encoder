@@ -49,7 +49,7 @@ COPY encoder-worker.sh /usr/local/bin/
 
 COPY --from=builder /root/builder/ffmpeg/build/ffmpeg /usr/local/bin/
 COPY --from=builder /root/builder/ffmpeg/build/ffprobe /usr/local/bin/
-COPY --from=builder /root/builder/svt-av1/Bin/Release/* /usr/local/lib/
+COPY --from=builder /root/builder/svt-av1/Bin/Release/* /usr/lib/
 
 ENV ENCODER_CPU=false
 ENV EXIT_ON_FINISH=false
