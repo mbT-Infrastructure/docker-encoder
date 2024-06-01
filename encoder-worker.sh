@@ -57,9 +57,14 @@ while true; do
         fi
         WORKER_FILE_BASENAME="$(basename "${WORKER_FILE}")"
         WORKER_FILE_RELATIVE_FOLDER="$(dirname "${WORKER_FILE#"${INPUT_DIR}/"}")"
-        if [[ "$WORKER_FILE_RELATIVE_FOLDER" == audio?(/*) ]]; then
-            ARGUMENTS_FOR_ENCODER+=(--audio)
-            WORKER_FILE_RELATIVE_FOLDER="${WORKER_FILE_RELATIVE_FOLDER#audio}"
+        if [[ "$WORKER_FILE_RELATIVE_FOLDER" == no-audio?(/*) ]]; then
+            ARGUMENTS_FOR_ENCODER+=(--no-audio)
+            WORKER_FILE_RELATIVE_FOLDER="${WORKER_FILE_RELATIVE_FOLDER#no-audio}"
+            WORKER_FILE_RELATIVE_FOLDER="${WORKER_FILE_RELATIVE_FOLDER#/}"
+        fi
+        if [[ "$WORKER_FILE_RELATIVE_FOLDER" == no-video?(/*) ]]; then
+            ARGUMENTS_FOR_ENCODER+=(--no-video)
+            WORKER_FILE_RELATIVE_FOLDER="${WORKER_FILE_RELATIVE_FOLDER#no-video}"
             WORKER_FILE_RELATIVE_FOLDER="${WORKER_FILE_RELATIVE_FOLDER#/}"
         fi
         if [[ "$WORKER_FILE_RELATIVE_FOLDER" == low-quality?(/*) ]]; then
