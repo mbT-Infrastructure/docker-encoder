@@ -6,8 +6,6 @@ RUN apt update -qq && apt install -y -qq libass-dev libdav1d-dev libopus-dev lib
     libvpx-dev libva-dev libvdpau-dev libvorbis-dev libx264-dev libx265-dev texinfo wget && \
     rm -rf /var/lib/apt/lists/*
 
-RUN git clone --branch n7.0.1 --depth 1 https://github.com/FFmpeg/FFmpeg.git
-
 RUN curl --silent --location "https://ffmpeg.org/ffmpeg-devel.asc" \
     | gpg --yes --dearmor >> signature-public-keys.gpg \
     && download.sh --name ffmpeg.tar.gz \
