@@ -65,7 +65,9 @@ fi
 
 PLATFORMS_STRING="${PLATFORMS[*]}"
 BUILD_ARGUMENTS+=(--platform "${PLATFORMS_STRING// /,}")
+OUTPUT_FILE="builds/${IMAGE//"/"/-}-${VERSION}-oci.tar"
 
-docker buildx build "${BUILD_ARGUMENTS[@]}" \
-    --output type=oci,dest=builds/"${IMAGE//"/"/-}-${VERSION}.tar" --tag "${IMAGE}:latest" \
-    --tag "${IMAGE}:${VERSION}" --tag "${IMAGE}:${VERSION}-base-${BASE_IMAGE_DATE}" .
+docker buildx build "${BUILD_ARGUMENTS[@]}" --output \
+    "type=oci,dest=${OUTPUT_FILE},compression=zstd,compression-level=19,force-compression=true" \
+    --tag "${IMAGE}:latest" --tag "${IMAGE}:${VERSION}" \
+    --tag "${IMAGE}:${VERSION}-base-${BASE_IMAGE_DATE}" .

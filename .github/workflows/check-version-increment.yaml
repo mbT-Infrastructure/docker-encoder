@@ -22,15 +22,17 @@ jobs:
               uses: actions/setup-node@v4
             - name: Download script
               run: |
-                curl --silent --output check-version-increment.sh \
-                    https://gitlab.com/madebyTimo/scripts-development/-/raw/main/scripts/\
-                check-version-increment.sh \
-                    && chmod +x check-version-increment.sh
+                  curl --silent --output check-version-increment.sh \
+                      https://gitlab.com/madebyTimo/scripts-development/-/raw/main/scripts/\
+                  check-version-increment.sh \
+                      && chmod +x check-version-increment.sh
             - name: Test version increment
-              if: startsWith(github.ref, '/refs/heads/feature/') ||
-                  startsWith(github.ref, '/refs/heads/bugfix/')
-              run: ./check-version-increment.sh --file --new new/Version.txt --old old/Version.txt
-            - name: Test version same
-              if: ${{ !( startsWith(github.ref, '/refs/heads/feature/') ||
-                  startsWith(github.ref, '/refs/heads/bugfix/') ) }}
-              run: "[[ $(cat new/Version.txt) == $(cat old/Version.txt) ]]"
+              run: |
+                  BRANCH="${GITHUB_HEAD_REF#/ref/head}"
+                  echo "Branch to check: $BRANCH"
+                  if [[ "$BRANCH" == @(feature|bugfix)/* ]]; then
+                      ./check-version-increment.sh --file --new new/Version.txt \
+                          --old old/Version.txt
+                  else
+                      [[ $(cat new/Version.txt) == $(cat old/Version.txt) ]]
+                  fi

@@ -1,12 +1,13 @@
 FROM madebytimo/builder AS builder
 
-ARG FFMPEG_VERSION=7.0.1
-
-RUN apt update -qq && apt install -y -qq libass-dev libdav1d-dev libopus-dev libmp3lame-dev \
-    libvpx-dev libva-dev libvdpau-dev libvorbis-dev libx264-dev libx265-dev texinfo wget && \
+RUN apt update -qq && apt install -y -qq libass-dev libdav1d-dev libmp3lame-dev libopus-dev \
+    libva-dev libvdpau-dev libvorbis-dev libvpx-dev libx264-dev libx265-dev texinfo wget && \
     rm -rf /var/lib/apt/lists/*
 
-RUN curl --silent --location "https://ffmpeg.org/ffmpeg-devel.asc" \
+RUN export FFMPEG_VERSION="$(curl --silent --location https://ffmpeg.org/download.html \
+        | grep --max-count 1 --only-matching 'https://ffmpeg.org/releases/ffmpeg-.*\.tar' \
+        | sed 's|^.*ffmpeg-\(.*\)\.tar|\1|')" \
+    && curl --silent --location "https://ffmpeg.org/ffmpeg-devel.asc" \
     | gpg --yes --dearmor >> signature-public-keys.gpg \
     && download.sh --name ffmpeg.tar.gz \
         "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz" \
@@ -43,7 +44,7 @@ RUN install-autonomous.sh install FFmpeg MetadataEditors Scripts \
     && apt purge -y -qq libsvtav1enc1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY encoder-worker.sh /usr/local/bin/
+COPY files/encoder-worker.sh /usr/local/bin/
 
 COPY --from=builder /root/builder/ffmpeg/build/ffmpeg /usr/local/bin/
 COPY --from=builder /root/builder/ffmpeg/build/ffprobe /usr/local/bin/
@@ -54,7 +55,7 @@ ENV EXIT_ON_FINISH=false
 ENV NICENESS_ADJUSTMENT=19
 ENV WORKER_ID=""
 
-COPY entrypoint.sh /entrypoint.sh
+COPY files/entrypoint.sh /entrypoint.sh
 
 ENTRYPOINT [ "/entrypoint.sh" ]
 CMD [ "encoder-worker.sh" ]
