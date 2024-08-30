@@ -39,7 +39,7 @@ fi
 WORKER_FILE=""
 while true; do
     WORKER_FILE="$(find "$INPUT_DIR" -type f -print -or \
-        -path "${INPUT_DIR}/.working" -prune | head --lines 1)"
+        -path "${INPUT_DIR}/.working" -prune | shuf --head-count 1)"
     if [[ -z "$WORKER_FILE" ]]; then
         echo "No worker file found."
         if [[ "$EXIT_ON_FINISH" == true ]]; then
