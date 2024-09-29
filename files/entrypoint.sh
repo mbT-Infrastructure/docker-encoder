@@ -1,13 +1,31 @@
 #!/usr/bin/env bash
 set -e
 
-mkdir --parents /media/encoder/input/crop/
-mkdir --parents /media/encoder/input/low-quality/crop/
-mkdir --parents /media/encoder/input/no-audio/crop/
-mkdir --parents /media/encoder/input/no-audio/low-quality/crop/
-mkdir --parents /media/encoder/input/no-video/
-mkdir --parents /media/encoder/output
-mkdir --parents /media/workdir
+FOLDER_TO_CREATE=(
+    /media/encoder/input/no-video
+    /media/encoder/output
+    /media/workdir
+    )
+
+for FOLDER_1 in /no-audio ""; do
+    for FOLDER_2 in /compatibility ""; do
+        for FOLDER_3 in /low-quality ""; do
+            for FOLDER_4 in /crop/16-9 /crop/1.85-1 /crop/2-1 /crop/2.35-1 /crop/2.4-1 ""; do
+                for FOLDER_5 in /fps/25 /fps/30 ""; do
+                    for FOLDER_6 in /scale/1280x720 /scale/1920x1080 ""; do
+                        FOLDER_TO_CREATE+=(
+        "/media/encoder/input${FOLDER_1}${FOLDER_2}${FOLDER_3}${FOLDER_4}${FOLDER_5}${FOLDER_6}"
+                            )
+                    done
+                done
+            done
+        done
+    done
+done
+for FOLDER in "${FOLDER_TO_CREATE[@]}"; do
+    echo $FOLDER
+    mkdir --parents "$FOLDER"
+done
 
 if [[ -z "$WORKER_ID" ]]; then
     export WORKER_ID="$HOSTNAME"
