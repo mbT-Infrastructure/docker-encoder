@@ -41,7 +41,7 @@ RUN mkdir ffmpeg/build \
 FROM madebytimo/python
 
 RUN install-autonomous.sh install FFmpeg MetadataEditors Scripts \
-    && apt purge -y -qq libsvtav1enc1 \
+    && apt purge -y -qq libsvtav1* \
     && rm -rf /var/lib/apt/lists/*
 
 COPY files/encoder-worker.sh /usr/local/bin/
