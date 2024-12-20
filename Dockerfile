@@ -38,7 +38,7 @@ RUN mkdir ffmpeg/build \
     && make --jobs "$(($(nproc) * 2))"
 
 
-FROM madebytimo/python
+FROM madebytimo/base
 
 RUN install-autonomous.sh install FFmpeg MetadataEditors Scripts \
     && apt purge -y -qq libsvtav1* \
