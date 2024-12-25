@@ -53,6 +53,7 @@ COPY --from=builder /root/builder/svt-av1/Bin/Release/* /usr/lib/
 ENV ENCODER_CPU=false
 ENV EXIT_ON_FINISH=false
 ENV NICENESS_ADJUSTMENT=19
+ENV SCHED_POLICY="other"
 ENV WORKER_ID=""
 
 COPY files/entrypoint.sh /entrypoint.sh

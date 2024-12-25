@@ -14,6 +14,8 @@ The input folder contains some special folder which correspont to arguments for 
     - Set to `true` to exit if no more files to encode are present.
 - `NICENESS_ADJUSTMENT`
     - Set a custom niceness adjustment, default `19`.
+- `SCHED_POLICY`
+    - Set the specified scheduling policy, default `other`.
 - `WORKER_ID`
     - Id of the worker, default is random.
 
