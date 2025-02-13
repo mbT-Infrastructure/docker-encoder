@@ -4,10 +4,14 @@ RUN apt update -qq && apt install -y -qq libass-dev libdav1d-dev libmp3lame-dev 
     libva-dev libvdpau-dev libvorbis-dev libvpx-dev libx264-dev libx265-dev texinfo wget && \
     rm -rf /var/lib/apt/lists/*
 
-RUN export FFMPEG_VERSION="$(curl --silent --location https://ffmpeg.org/download.html \
+
+RUN FFMPEG_VERSION="$(curl --silent --location https://ffmpeg.org/download.html \
         | grep --max-count 1 --only-matching 'https://ffmpeg.org/releases/ffmpeg-.*\.tar' \
         | sed 's|^.*ffmpeg-\(.*\)\.tar|\1|')" \
-    && curl --silent --location "https://ffmpeg.org/ffmpeg-devel.asc" \
+    SVTAV1_VERSION="$(download.sh --silent --output - \
+        https://gitlab.com/api/v4/projects/AOMediaCodec%2FSVT-AV1/releases \
+        | sed --null-data --silent 's|^[^{]*{[^{]*"tag_name":[^"]*"\([^"]*\)".*$|\1|p')" \
+    && download.sh --silent --output - "https://ffmpeg.org/ffmpeg-devel.asc" \
     | gpg --yes --dearmor >> signature-public-keys.gpg \
     && download.sh --name ffmpeg.tar.gz \
         "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz" \
@@ -20,7 +24,8 @@ RUN export FFMPEG_VERSION="$(curl --silent --location https://ffmpeg.org/downloa
     && rm ffmpeg.tar.gz \
     && mv ffmpeg-* ffmpeg \
     && download.sh --name svt-av1.tar.gz \
-        https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/master/SVT-AV1-master.tar.gz \
+        "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/${SVTAV1_VERSION}/\
+SVT-AV1-${SVTAV1_VERSION}.tar.gz" \
     && compress.sh --decompress svt-av1.tar.gz \
     && rm svt-av1.tar.gz \
     && mv SVT-AV1-* svt-av1

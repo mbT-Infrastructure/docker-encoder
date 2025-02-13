@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -e -o pipefail
 
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 

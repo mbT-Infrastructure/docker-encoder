@@ -19,7 +19,8 @@ jobs:
                   if (ls /media/saved-cache/*.tar.zst); then
                       docker run --pull always --rm \
                           --volume "/media/saved-cache:/media/saved-cache" \
-                          --volume "docker-encoder-build-cache:/media/build-cache" \
+                          --volume \
+                          "docker-encoder-build-cache:/media/build-cache" \
                           --workdir /media \
                           madebytimo/scripts \
                           compress.sh --decompress /media/saved-cache/*.tar.zst
@@ -45,7 +46,8 @@ jobs:
               run: |
                   docker run --pull always --rm \
                       --volume "/media/saved-cache:/media/saved-cache" \
-                      --volume "docker-encoder-build-cache:/media/build-cache" \
+                      --volume \
+                      "docker-encoder-build-cache:/media/build-cache" \
                       madebytimo/scripts \
                       compress.sh --fast --output /media/saved-cache/build-cache /media/build-cache
                   sudo chown -R "$(whoami)" /media/saved-cache
