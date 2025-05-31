@@ -25,11 +25,11 @@ The input folder contains some special folder which correspont to arguments for 
 - `/media/encoder`
     - The input and output directory of the files to encode and the encoded files.
 - `/media/encoder/input`
-    - The input directory with source files.
+    - The input directory for source files.
 - `/media/encoder/failed`
-    - The input directory with source files of failed encodes.
+    - The output directory for source files of failed encodes.
 - `/media/encoder/output`
-    - The output directory with encoded files.
+    - The output directory for encoded files.
 - `/media/workdir`
     - The directory which is used while encoding.
 

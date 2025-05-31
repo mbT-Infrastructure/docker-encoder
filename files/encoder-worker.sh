@@ -4,7 +4,6 @@ set -e
 INPUT_DIR="/media/encoder/input"
 FAILED_DIR="/media/encoder/failed"
 OUTPUT_DIR="/media/encoder/output"
-SCHED_POLICY="${SCHED_POLICY#SCHED_}"
 WORKDIR="/media/workdir"
 
 if [[ "$ENCODER_CPU" != true ]]; then
@@ -105,7 +104,7 @@ while true; do
         mkdir --parents "$WORKER_INPUT_DIR"
         mv "$WORKER_FILE" "${WORKER_INPUT_DIR}/${WORKER_FILE_BASENAME}"
         cp "${WORKER_INPUT_DIR}/${WORKER_FILE_BASENAME}" "${WORKDIR}/${WORKER_FILE_BASENAME}"
-        chrt --"${SCHED_POLICY,,}" 0 nice --adjustment "$NICENESS_ADJUSTMENT" \
+        low-priority.sh \
             encode.sh --replace "${ARGUMENTS_FOR_ENCODER[@]}" "${WORKDIR}/${WORKER_FILE_BASENAME}"
         mkdir --parents "$WORKER_OUTPUT_DIR"
         mv "${WORKDIR}/${WORKER_FILE_BASENAME%.*}."* "$WORKER_OUTPUT_DIR"
