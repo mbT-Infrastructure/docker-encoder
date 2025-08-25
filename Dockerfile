@@ -1,7 +1,7 @@
 FROM madebytimo/builder AS builder
 
 RUN apt update -qq && apt install -y -qq libass-dev libdav1d-dev libmp3lame-dev libopus-dev \
-    libva-dev libvdpau-dev libvorbis-dev libvpx-dev libx264-dev libx265-dev texinfo wget && \
+    libva-dev libvdpau-dev libvorbis-dev libvpx-dev libx264-dev libx265-dev nasm texinfo && \
     rm -rf /var/lib/apt/lists/*
 
 
