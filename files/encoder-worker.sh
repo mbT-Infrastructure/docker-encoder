@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-set -e
+set -e -o pipefail
 
-INPUT_DIR="/media/encoder/input"
-FAILED_DIR="/media/encoder/failed"
-OUTPUT_DIR="/media/encoder/output"
+LOCAL_BASE_DIR="/media/encoder"
+INPUT_DIR="input"
+FAILED_DIR="failed"
+OUTPUT_DIR="output"
 WORKDIR="/media/workdir"
 
 if [[ "$ENCODER_CPU" != true ]]; then
@@ -15,31 +16,51 @@ fi
 WORKER_INPUT_DIR="${INPUT_DIR}/.working/$WORKER_ID"
 WORKER_OUTPUT_DIR="${OUTPUT_DIR}/.working/$WORKER_ID"
 
+if [[ "$CREATE_FOLDERS" == true ]]; then
+    create-folders.sh
+fi
+
 echo "Start encoder worker \"${WORKER_ID}\" (cpu: ${ENCODER_CPU})."
 cd "$WORKDIR"
 
 cleanup () {
     echo "Do cleanup."
-    for FILE in "$WORKER_INPUT_DIR/"*; do
-        if [[ -f "$FILE"  ]]; then
-            mkdir --parents "$FAILED_DIR"
-            mv "$FILE" "$FAILED_DIR"
-        fi
-    done
-    rm --force --recursive "$WORKER_INPUT_DIR" "$WORKER_OUTPUT_DIR"
+    rm --force --recursive "${WORKDIR:?}"/*
+    if [[ -z "$SERVER_URL" ]]; then
+        for FILE in "${LOCAL_BASE_DIR}/$WORKER_INPUT_DIR/"*; do
+            if [[ -f "$FILE"  ]]; then
+                mkdir --parents "${LOCAL_BASE_DIR}/$FAILED_DIR"
+                mv "$FILE" "${LOCAL_BASE_DIR}/$FAILED_DIR"
+            fi
+        done
+        rm --force --recursive "${LOCAL_BASE_DIR:?}/${WORKER_INPUT_DIR:?}" \
+            "${LOCAL_BASE_DIR:?}/${WORKER_OUTPUT_DIR:?}"
+    else
+        rclone --config "" moveto ":sftp:${WORKER_INPUT_DIR}/" \
+            ":sftp:$FAILED_DIR" > /dev/null 2>&1 || true
+        rclone --config "" purge ":sftp:$WORKER_INPUT_DIR" > /dev/null 2>&1 || true
+        rclone --config "" purge ":sftp:$WORKER_OUTPUT_DIR" > /dev/null 2>&1 || true
+    fi
 }
 
 trap cleanup SIGINT SIGTERM
 
-if [[ -d "$WORKER_INPUT_DIR" ]]; then
+if [[ -z "$SERVER_URL" ]] && [[ -d "${LOCAL_BASE_DIR:?}/$WORKER_INPUT_DIR" ]] \
+    || rclone --config "" lsd ":sftp:$WORKER_INPUT_DIR" > /dev/null 2>&1; then
     echo "Worker directory already exists."
     cleanup
 fi
 
 WORKER_FILE=""
 while true; do
-    WORKER_FILE="$(find "$INPUT_DIR" -type f -print -or \
-        -path "${INPUT_DIR}/.working" -prune | shuf --head-count 1)"
+    if [[ -z "$SERVER_URL" ]]; then
+        WORKER_FILE="$(find "${LOCAL_BASE_DIR}/$INPUT_DIR" -type f -print -or \
+            -path "${LOCAL_BASE_DIR}/${INPUT_DIR}/.working" -prune | shuf --head-count 1)"
+        WORKER_FILE="${WORKER_FILE#"${LOCAL_BASE_DIR}/"}"
+    else
+        WORKER_FILE="$(rclone --config "" lsf --exclude '.working/' --files-only \
+            --recursive ":sftp:$INPUT_DIR" | shuf --head-count 1 | sed "s|^|${INPUT_DIR}/|")"
+    fi
     if [[ -z "$WORKER_FILE" ]]; then
         echo "No worker file found."
         if [[ "$EXIT_ON_FINISH" == true ]]; then
@@ -101,17 +122,42 @@ while true; do
             WORKER_FILE_RELATIVE_FOLDER="${WORKER_FILE_RELATIVE_FOLDER#"$SCALE_PARAMETER"}"
             WORKER_FILE_RELATIVE_FOLDER="${WORKER_FILE_RELATIVE_FOLDER#/}"
         fi
-        mkdir --parents "$WORKER_INPUT_DIR"
-        mv "$WORKER_FILE" "${WORKER_INPUT_DIR}/${WORKER_FILE_BASENAME}"
-        cp "${WORKER_INPUT_DIR}/${WORKER_FILE_BASENAME}" "${WORKDIR}/${WORKER_FILE_BASENAME}"
+
+        if [[ -z "$SERVER_URL" ]]; then
+            mkdir --parents "${LOCAL_BASE_DIR}/$WORKER_INPUT_DIR"
+            mv "${LOCAL_BASE_DIR}/$WORKER_FILE" \
+                "${LOCAL_BASE_DIR}/${WORKER_INPUT_DIR}/${WORKER_FILE_BASENAME}"
+            cp "${LOCAL_BASE_DIR}/${WORKER_INPUT_DIR}/${WORKER_FILE_BASENAME}" \
+                "${WORKDIR}/${WORKER_FILE_BASENAME}"
+        else
+            rclone --config "" mkdir ":sftp:$WORKER_INPUT_DIR"
+            rclone --config "" moveto ":sftp:$WORKER_FILE" \
+                ":sftp:${WORKER_INPUT_DIR}/${WORKER_FILE_BASENAME}"
+            rclone --config "" copyto \
+                ":sftp:${WORKER_INPUT_DIR}/${WORKER_FILE_BASENAME}" \
+                "${WORKDIR}/${WORKER_FILE_BASENAME}"
+        fi
         low-priority.sh \
             encode.sh --replace "${ARGUMENTS_FOR_ENCODER[@]}" "${WORKDIR}/${WORKER_FILE_BASENAME}"
-        mkdir --parents "$WORKER_OUTPUT_DIR"
-        mv "${WORKDIR}/${WORKER_FILE_BASENAME%.*}."* "$WORKER_OUTPUT_DIR"
-        mkdir --parents "${OUTPUT_DIR}/${WORKER_FILE_RELATIVE_FOLDER}"
-        mv "${WORKER_OUTPUT_DIR}/${WORKER_FILE_BASENAME%.*}."* \
-            "${OUTPUT_DIR}/${WORKER_FILE_RELATIVE_FOLDER}"
-        rm "${WORKER_INPUT_DIR}/${WORKER_FILE_BASENAME%.*}."*
+        OUTPUT_FILE_BASENAME="$(basename "${WORKDIR}/${WORKER_FILE_BASENAME%.*}."*)"
+        if [[ -z "$SERVER_URL" ]]; then
+            mkdir --parents "${LOCAL_BASE_DIR}/$WORKER_OUTPUT_DIR"
+            mv "${WORKDIR}/${OUTPUT_FILE_BASENAME}" "${LOCAL_BASE_DIR}/$WORKER_OUTPUT_DIR"
+            mkdir --parents "${LOCAL_BASE_DIR}/${OUTPUT_DIR}/${WORKER_FILE_RELATIVE_FOLDER}"
+            mv "${LOCAL_BASE_DIR}/${WORKER_OUTPUT_DIR}/${OUTPUT_FILE_BASENAME}" \
+                "${LOCAL_BASE_DIR}/${OUTPUT_DIR}/${WORKER_FILE_RELATIVE_FOLDER}"
+            rm "${LOCAL_BASE_DIR}/${WORKER_INPUT_DIR}/${OUTPUT_FILE_BASENAME}"
+        else
+            rclone --config "" mkdir ":sftp:$WORKER_OUTPUT_DIR"
+            rclone --config "" moveto "${WORKDIR}/${OUTPUT_FILE_BASENAME}" \
+                ":sftp:${WORKER_OUTPUT_DIR}/${OUTPUT_FILE_BASENAME}"
+            rclone --config "" mkdir ":sftp:${OUTPUT_DIR}/$WORKER_FILE_RELATIVE_FOLDER"
+            rclone --config "" moveto \
+                ":sftp:${WORKER_OUTPUT_DIR}/${OUTPUT_FILE_BASENAME}" \
+                ":sftp:${OUTPUT_DIR}/${WORKER_FILE_RELATIVE_FOLDER}/${OUTPUT_FILE_BASENAME}"
+            rclone --config "" delete \
+                ":sftp:${WORKER_INPUT_DIR}/${OUTPUT_FILE_BASENAME}"
+        fi
         cleanup
         echo "Finished encode of \"${WORKER_FILE}\""
     fi

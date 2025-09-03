@@ -4,7 +4,6 @@ RUN apt update -qq && apt install -y -qq libass-dev libdav1d-dev libmp3lame-dev 
     libva-dev libvdpau-dev libvorbis-dev libvpx-dev libx264-dev libx265-dev nasm texinfo && \
     rm -rf /var/lib/apt/lists/*
 
-
 RUN FFMPEG_VERSION="$(curl --silent --location https://ffmpeg.org/download.html \
         | grep --max-count 1 --only-matching 'https://ffmpeg.org/releases/ffmpeg-.*\.tar' \
         | sed 's|^.*ffmpeg-\(.*\)\.tar|\1|')" \
@@ -28,40 +27,58 @@ RUN FFMPEG_VERSION="$(curl --silent --location https://ffmpeg.org/download.html 
 SVT-AV1-${SVTAV1_VERSION}.tar.gz" \
     && compress.sh --decompress svt-av1.tar.gz \
     && rm svt-av1.tar.gz \
-    && mv SVT-AV1-* svt-av1
+    && mv SVT-AV1-* svt-av1 \
+    && mkdir --parents output/{bin,lib}
 
 RUN cd svt-av1/Build \
     && cmake .. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
     && make --jobs "$(nproc)" \
-    && make install
+    && make install --jobs "$(nproc)" \
+    && mv /root/builder/svt-av1/Bin/Release/lib* /root/builder/output/lib/
 
 RUN mkdir ffmpeg/build \
     && cd ffmpeg/build \
-    && ../configure --disable-doc --enable-gpl --enable-libass --enable-libdav1d \
-    --enable-libfreetype --enable-libmp3lame --enable-libopus --enable-libsvtav1 \
-    --enable-libvorbis --enable-libvpx --enable-libx264 --enable-libx265 \
-    && make --jobs "$(($(nproc) * 2))"
-
+    && ../configure --bindir=/root/builder/output/bin --libdir=/root/builder/output/lib \
+        --shlibdir=/root/builder/output/lib --pkgconfigdir=lib/pkgconfig \
+        --disable-doc --disable-ffplay --enable-gpl --enable-libass --enable-libdav1d \
+        --enable-libfreetype --enable-libmp3lame --enable-libopus --enable-libsvtav1 \
+        --enable-libvorbis --enable-libvpx --enable-libx264 --enable-libx265 \
+        --enable-rpath --enable-shared \
+    && make --jobs "$(($(nproc) * 2))" \
+    && make install --jobs "$(nproc)" \
+    && for COMMAND in /root/builder/output/bin/*; do \
+        ldd "$COMMAND" \
+            | sed --silent 's|^[^/]*\(/lib/\S*\)\s.*$|\1|p' \
+            | while read -r LIBRARY; do \
+                cp --no-clobber "$LIBRARY" /root/builder/output/lib; \
+            done \
+    done
 
 FROM madebytimo/base
 
-RUN install-autonomous.sh install FFmpeg MetadataEditors Scripts \
-    && apt purge -y -qq libsvtav1* \
-    && rm -rf /var/lib/apt/lists/*
+RUN install-autonomous.sh install MetadataEditors Scripts \
+    && apt update -qq && apt install -y -qq rclone \
+    && rm -rf /var/lib/apt/lists/* \
+    \
+    && mkdir /media/workdir /media/encoder
 
-COPY files/encoder-worker.sh /usr/local/bin/
+COPY --from=builder /root/builder/output/bin/* /usr/local/bin/
+COPY --from=builder /root/builder/output/lib/* /usr/lib/
 
-COPY --from=builder /root/builder/ffmpeg/build/ffmpeg /usr/local/bin/
-COPY --from=builder /root/builder/ffmpeg/build/ffprobe /usr/local/bin/
-COPY --from=builder /root/builder/svt-av1/Bin/Release/* /usr/lib/
+COPY files/create-folders.sh files/encoder-worker.sh files/entrypoint.sh /usr/local/bin/
 
+ENV CREATE_FOLDERS=true
 ENV ENCODER_CPU=false
 ENV EXIT_ON_FINISH=false
 ENV NICENESS_ADJUSTMENT=19
 ENV SCHED_POLICY="other"
+ENV SERVER_IDENTITY=""
+ENV SERVER_KEY=""
+ENV SERVER_URL=""
 ENV WORKER_ID=""
 
-COPY files/entrypoint.sh /entrypoint.sh
-
-ENTRYPOINT [ "/entrypoint.sh" ]
+ENTRYPOINT [ "entrypoint.sh" ]
 CMD [ "encoder-worker.sh" ]
+
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.source="https://github.com/mbT-Infrastructure/docker-encoder"

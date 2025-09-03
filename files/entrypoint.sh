@@ -1,34 +1,30 @@
 #!/usr/bin/env bash
-set -e
-
-FOLDER_TO_CREATE=(
-    /media/encoder/input/no-video
-    /media/encoder/output
-    /media/workdir
-    )
-
-for FOLDER_1 in /no-audio ""; do
-    for FOLDER_2 in /compatibility ""; do
-        for FOLDER_3 in /low-quality ""; do
-            for FOLDER_4 in /crop/{4-3,3-2,14-9,5-3,16-9,1.85-1,2-1,2.35-1,2.39-1,2.4-1} ""; do
-                for FOLDER_5 in /fps/{25,30,60} ""; do
-                    for FOLDER_6 in /scale/{1280x720,1920x1080,3840x2160} ""; do
-                        FOLDER_TO_CREATE+=(
-        "/media/encoder/input${FOLDER_1}${FOLDER_2}${FOLDER_3}${FOLDER_4}${FOLDER_5}${FOLDER_6}"
-                            )
-                    done
-                done
-            done
-        done
-    done
-done
-for FOLDER in "${FOLDER_TO_CREATE[@]}"; do
-    echo $FOLDER
-    mkdir --parents "$FOLDER"
-done
+set -e -o pipefail
 
 if [[ -z "$WORKER_ID" ]]; then
     export WORKER_ID="$HOSTNAME"
+fi
+
+if [[ -n "$SERVER_URL" ]]; then
+    RCLONE_SFTP_USER=${SERVER_URL#sftp://}
+    RCLONE_SFTP_USER=${RCLONE_SFTP_USER%@*}
+    RCLONE_SFTP_HOST=${SERVER_URL#*@}
+    RCLONE_SFTP_HOST=${RCLONE_SFTP_HOST%%:*}
+    RCLONE_SFTP_PORT=${SERVER_URL##*:}
+    if [[ "$RCLONE_SFTP_PORT" == "$SERVER_URL" ]]; then
+        RCLONE_SFTP_PORT="22"
+    fi
+    echo "$SERVER_KEY" > /dev/shm/ssh-key
+    chmod 600 /dev/shm/ssh-key
+    RCLONE_SFTP_KEY_FILE="/dev/shm/ssh-key"
+    RCLONE_SFTP_KNOWN_HOSTS_FILE=
+    if [[ -n "$SERVER_IDENTITY" ]]; then
+        echo "* $SERVER_IDENTITY" > /dev/shm/ssh-known-hosts
+        chmod 600 /dev/shm/ssh-known-hosts
+        RCLONE_SFTP_KNOWN_HOSTS_FILE="/dev/shm/ssh-known-hosts"
+    fi
+    export RCLONE_SFTP_HOST RCLONE_SFTP_KEY_FILE RCLONE_SFTP_KNOWN_HOSTS_FILE \
+        RCLONE_SFTP_PORT RCLONE_SFTP_USER
 fi
 
 exec "$@"
