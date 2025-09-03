@@ -20,11 +20,11 @@ if [[ "$CREATE_FOLDERS" == true ]]; then
     create-folders.sh
 fi
 
-echo "Start encoder worker \"${WORKER_ID}\" (cpu: ${ENCODER_CPU})."
+echo "Start encoder worker \"${WORKER_ID}\" (cpu: ${ENCODER_CPU})." >&2
 cd "$WORKDIR"
 
 cleanup () {
-    echo "Do cleanup."
+    echo "Do cleanup." >&2
     rm --force --recursive "${WORKDIR:?}"/*
     if [[ -z "$SERVER_URL" ]]; then
         for FILE in "${LOCAL_BASE_DIR}/$WORKER_INPUT_DIR/"*; do
@@ -47,7 +47,7 @@ trap cleanup SIGINT SIGTERM
 
 if [[ -z "$SERVER_URL" ]] && [[ -d "${LOCAL_BASE_DIR:?}/$WORKER_INPUT_DIR" ]] \
     || rclone --config "" lsd ":sftp:$WORKER_INPUT_DIR" > /dev/null 2>&1; then
-    echo "Worker directory already exists."
+    echo "Worker directory already exists." >&2
     cleanup
 fi
 
@@ -62,16 +62,16 @@ while true; do
             --recursive ":sftp:$INPUT_DIR" | shuf --head-count 1 | sed "s|^|${INPUT_DIR}/|")"
     fi
     if [[ -z "$WORKER_FILE" ]]; then
-        echo "No worker file found."
+        echo "No worker file found." >&2
         if [[ "$EXIT_ON_FINISH" == true ]]; then
             echo "Exit on finish is enabled."
             exit 0
         else
-            echo "Wait 10min."
+            echo "Wait 10min." >&2
             sleep 600
         fi
     else
-        echo "Prepare encode of \"${WORKER_FILE}\"."
+        echo "Prepare encode of \"${WORKER_FILE}\"." >&2
         ARGUMENTS_FOR_ENCODER=()
         if [[ "$ENCODER_CPU" == true ]]; then
             ARGUMENTS_FOR_ENCODER+=(--cpu)
@@ -159,6 +159,6 @@ while true; do
                 ":sftp:${WORKER_INPUT_DIR}/${OUTPUT_FILE_BASENAME}"
         fi
         cleanup
-        echo "Finished encode of \"${WORKER_FILE}\""
+        echo "Finished encode of \"${WORKER_FILE}\"" >&2
     fi
 done

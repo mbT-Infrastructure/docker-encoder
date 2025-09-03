@@ -21,6 +21,9 @@ for FOLDER_1 in /no-audio ""; do
         done
     done
 done
+
+echo "Creating folders." >&2
+
 for FOLDER in "${FOLDER_TO_CREATE[@]}"; do
     if [[ -z "$SERVER_URL" ]]; then
         mkdir --parents "/media/encoder/$FOLDER"

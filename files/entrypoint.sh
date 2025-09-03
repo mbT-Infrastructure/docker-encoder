@@ -19,7 +19,8 @@ if [[ -n "$SERVER_URL" ]]; then
     RCLONE_SFTP_KEY_FILE="/dev/shm/ssh-key"
     RCLONE_SFTP_KNOWN_HOSTS_FILE=
     if [[ -n "$SERVER_IDENTITY" ]]; then
-        echo "* $SERVER_IDENTITY" > /dev/shm/ssh-known-hosts
+        echo "[${RCLONE_SFTP_HOST}]:${RCLONE_SFTP_PORT} $SERVER_IDENTITY" \
+            > /dev/shm/ssh-known-hosts
         chmod 600 /dev/shm/ssh-known-hosts
         RCLONE_SFTP_KNOWN_HOSTS_FILE="/dev/shm/ssh-known-hosts"
     fi
