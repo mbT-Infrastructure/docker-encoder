@@ -18,14 +18,13 @@ contains some special folder which corresponds to arguments for the encode scrip
     -   If set to `true` the container creates the predefined input and output folder structure
         before processing, default `true`.
 -   `ENCODER_CPU`
--   `ENCODER_CPU`
     -   Set to `true` to enable cpu encoding.
 -   `EXIT_ON_FINISH`
     -   Set to `true` to exit if no more files to encode are present.
 -   `NICENESS_ADJUSTMENT`
     -   Set a custom niceness adjustment, default `19`.
 -   `SCHED_POLICY`
-    -   Set the specified scheduling policy, default `other`.
+    -   Set the specified scheduling policy, default `idle`.
 -   `WORKER_ID`
     -   Id of the worker, default is random.
 -   `SERVER_URL`
