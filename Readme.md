@@ -21,6 +21,8 @@ contains some special folder which corresponds to arguments for the encode scrip
     -   Set to `true` to enable cpu encoding.
 -   `EXIT_ON_FINISH`
     -   Set to `true` to exit if no more files to encode are present.
+-   `MAX_BANDWIDTH`
+    -   Limit the upload and download bandwidth, for example `10M` for 10 MB/s.
 -   `NICENESS_ADJUSTMENT`
     -   Set a custom niceness adjustment, default `19`.
 -   `SCHED_POLICY`

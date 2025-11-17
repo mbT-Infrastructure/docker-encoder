@@ -28,6 +28,6 @@ for FOLDER in "${FOLDER_TO_CREATE[@]}"; do
     if [[ -z "$SERVER_URL" ]]; then
         mkdir --parents "/media/encoder/$FOLDER"
     else
-        rclone --config "" mkdir ":sftp:$FOLDER"
+        rclone mkdir ":sftp:$FOLDER"
     fi
 done

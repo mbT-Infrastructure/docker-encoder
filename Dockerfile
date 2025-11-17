@@ -70,6 +70,7 @@ COPY files/create-folders.sh files/encoder-worker.sh files/entrypoint.sh /usr/lo
 ENV CREATE_FOLDERS=true
 ENV ENCODER_CPU=false
 ENV EXIT_ON_FINISH=false
+ENV MAX_BANDWIDTH=0
 ENV NICENESS_ADJUSTMENT=19
 ENV SCHED_POLICY="idle"
 ENV SERVER_IDENTITY=""

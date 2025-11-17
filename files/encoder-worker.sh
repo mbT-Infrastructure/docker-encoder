@@ -36,17 +36,17 @@ cleanup () {
         rm --force --recursive "${LOCAL_BASE_DIR:?}/${WORKER_INPUT_DIR:?}" \
             "${LOCAL_BASE_DIR:?}/${WORKER_OUTPUT_DIR:?}"
     else
-        rclone --config "" moveto ":sftp:${WORKER_INPUT_DIR}/" \
+        rclone moveto ":sftp:${WORKER_INPUT_DIR}/" \
             ":sftp:$FAILED_DIR" > /dev/null 2>&1 || true
-        rclone --config "" purge ":sftp:$WORKER_INPUT_DIR" > /dev/null 2>&1 || true
-        rclone --config "" purge ":sftp:$WORKER_OUTPUT_DIR" > /dev/null 2>&1 || true
+        rclone purge ":sftp:$WORKER_INPUT_DIR" > /dev/null 2>&1 || true
+        rclone purge ":sftp:$WORKER_OUTPUT_DIR" > /dev/null 2>&1 || true
     fi
 }
 
 trap cleanup SIGINT SIGTERM
 
 if [[ -z "$SERVER_URL" ]] && [[ -d "${LOCAL_BASE_DIR:?}/$WORKER_INPUT_DIR" ]] \
-    || rclone --config "" lsd ":sftp:$WORKER_INPUT_DIR" > /dev/null 2>&1; then
+    || rclone lsd ":sftp:$WORKER_INPUT_DIR" > /dev/null 2>&1; then
     echo "Worker directory already exists." >&2
     cleanup
 fi
@@ -58,7 +58,7 @@ while true; do
             -path "${LOCAL_BASE_DIR}/${INPUT_DIR}/.working" -prune | shuf --head-count 1)"
         WORKER_FILE="${WORKER_FILE#"${LOCAL_BASE_DIR}/"}"
     else
-        WORKER_FILE="$(rclone --config "" lsf --exclude '.working/' --files-only \
+        WORKER_FILE="$(rclone lsf --exclude '.working/' --files-only \
             --recursive ":sftp:$INPUT_DIR" | shuf --head-count 1 | sed "s|^|${INPUT_DIR}/|")"
     fi
     if [[ -z "$WORKER_FILE" ]]; then
@@ -130,10 +130,10 @@ while true; do
             cp "${LOCAL_BASE_DIR}/${WORKER_INPUT_DIR}/${WORKER_FILE_BASENAME}" \
                 "${WORKDIR}/${WORKER_FILE_BASENAME}"
         else
-            rclone --config "" mkdir ":sftp:$WORKER_INPUT_DIR"
-            rclone --config "" moveto ":sftp:$WORKER_FILE" \
+            rclone mkdir ":sftp:$WORKER_INPUT_DIR"
+            rclone moveto ":sftp:$WORKER_FILE" \
                 ":sftp:${WORKER_INPUT_DIR}/${WORKER_FILE_BASENAME}"
-            rclone --config "" copyto \
+            rclone copyto \
                 ":sftp:${WORKER_INPUT_DIR}/${WORKER_FILE_BASENAME}" \
                 "${WORKDIR}/${WORKER_FILE_BASENAME}"
         fi
@@ -148,14 +148,14 @@ while true; do
                 "${LOCAL_BASE_DIR}/${OUTPUT_DIR}/${WORKER_FILE_RELATIVE_FOLDER}"
             rm "${LOCAL_BASE_DIR}/${WORKER_INPUT_DIR}/${OUTPUT_FILE_BASENAME}"
         else
-            rclone --config "" mkdir ":sftp:$WORKER_OUTPUT_DIR"
-            rclone --config "" moveto "${WORKDIR}/${OUTPUT_FILE_BASENAME}" \
+            rclone mkdir ":sftp:$WORKER_OUTPUT_DIR"
+            rclone moveto "${WORKDIR}/${OUTPUT_FILE_BASENAME}" \
                 ":sftp:${WORKER_OUTPUT_DIR}/${OUTPUT_FILE_BASENAME}"
-            rclone --config "" mkdir ":sftp:${OUTPUT_DIR}/$WORKER_FILE_RELATIVE_FOLDER"
-            rclone --config "" moveto \
+            rclone mkdir ":sftp:${OUTPUT_DIR}/$WORKER_FILE_RELATIVE_FOLDER"
+            rclone moveto \
                 ":sftp:${WORKER_OUTPUT_DIR}/${OUTPUT_FILE_BASENAME}" \
                 ":sftp:${OUTPUT_DIR}/${WORKER_FILE_RELATIVE_FOLDER}/${OUTPUT_FILE_BASENAME}"
-            rclone --config "" delete \
+            rclone delete \
                 ":sftp:${WORKER_INPUT_DIR}/${OUTPUT_FILE_BASENAME}"
         fi
         cleanup

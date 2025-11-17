@@ -6,6 +6,8 @@ if [[ -z "$WORKER_ID" ]]; then
 fi
 
 if [[ -n "$SERVER_URL" ]]; then
+    RCLONE_BWLIMIT="$MAX_BANDWIDTH"
+    RCLONE_CONFIG=""
     RCLONE_SFTP_USER=${SERVER_URL#sftp://}
     RCLONE_SFTP_USER=${RCLONE_SFTP_USER%@*}
     RCLONE_SFTP_HOST=${SERVER_URL#*@}
@@ -24,8 +26,8 @@ if [[ -n "$SERVER_URL" ]]; then
         chmod 600 /dev/shm/ssh-known-hosts
         RCLONE_SFTP_KNOWN_HOSTS_FILE="/dev/shm/ssh-known-hosts"
     fi
-    export RCLONE_SFTP_HOST RCLONE_SFTP_KEY_FILE RCLONE_SFTP_KNOWN_HOSTS_FILE \
-        RCLONE_SFTP_PORT RCLONE_SFTP_USER
+    export RCLONE_BWLIMIT RCLONE_CONFIG RCLONE_SFTP_HOST RCLONE_SFTP_KEY_FILE \
+        RCLONE_SFTP_KNOWN_HOSTS_FILE RCLONE_SFTP_PORT RCLONE_SFTP_USER
 fi
 
 exec "$@"
