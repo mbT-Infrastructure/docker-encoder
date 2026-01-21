@@ -6,7 +6,8 @@ BUILDER_EXPORT_ARCHIVE="${BUILDER_EXPORT_ARCHIVE:-true}"
 DEPENDENCIES=(docker zstd)
 UPDATE_BASE=false
 PLATFORMS=(linux/amd64 linux/arm64)
-REGISTRY_USER="madebytimo"
+REGISTRY="docker.io/madebytimo"
+SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 APPLICATION_NAME="encoder"
 
 # help message
@@ -43,19 +44,19 @@ while [[ -n "$1" ]]; do
     shift
 done
 
+IMAGE="${REGISTRY}/${APPLICATION_NAME}"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 VERSION="$(cat Version.txt)"
 
 cd "$PROJECT_DIR"
 mkdir --parents builds
 
-BASE_IMAGE="$(tac Dockerfile | grep --max-count=1 "^FROM" | cut -d" " -f2)"
-docker pull --quiet "$BASE_IMAGE"
-BASE_IMAGE_DATE="$(docker image inspect --format="{{ .Created }}" "$BASE_IMAGE" \
-    | sed 's|^\([^T ]*\)[T ].*$|\1|')"
-echo "Base image is $BASE_IMAGE from $BASE_IMAGE_DATE"
-IMAGE="${REGISTRY_USER}/${APPLICATION_NAME}"
 if [[ "$UPDATE_BASE" == true ]]; then
+    BASE_IMAGE="$(tac Dockerfile | grep --max-count=1 "^FROM" | cut -d" " -f2)"
+    docker pull --quiet "$BASE_IMAGE"
+    BASE_IMAGE_DATE="$(docker image inspect --format="{{ .Created }}" "$BASE_IMAGE" \
+        | sed 's|^\([^T ]*\)[T ].*$|\1|')"
+    echo "Base image is $BASE_IMAGE from $BASE_IMAGE_DATE"
     docker pull "$IMAGE"
     PUSHED_IMAGE_DATE="$(docker image inspect --format="{{ .Created }}" "$IMAGE" \
         | sed 's|^\([^T ]*\)[T ].*$|\1|')"
@@ -64,27 +65,28 @@ if [[ "$UPDATE_BASE" == true ]]; then
         echo "Used base image is up to date"
         exit;
     fi
+    docker image rm "$IMAGE"
 fi
 
 PLATFORMS_STRING="${PLATFORMS[*]}"
 BUILD_ARGUMENTS+=(--platform "${PLATFORMS_STRING// /,}")
 if [[ "$BUILDER_EXPORT_ARCHIVE" == true ]]; then
-    OUTPUT_FILE="builds/${IMAGE//"/"/-}-${VERSION}-oci.tar"
+    OUTPUT_FILE="builds/$(basename "$REGISTRY")-${APPLICATION_NAME}-${VERSION}-oci.tar"
     BUILD_ARGUMENTS+=(--output \
     "type=oci,dest=${OUTPUT_FILE},compression=zstd,compression-level=19,force-compression=true")
 fi
 
-docker buildx build "${BUILD_ARGUMENTS[@]}" \
+docker buildx build --pull "${BUILD_ARGUMENTS[@]}" \
     --tag "${IMAGE}:latest" --tag "${IMAGE}:${VERSION}" \
-    --tag "${IMAGE}:${VERSION}-base-${BASE_IMAGE_DATE}" .
+    --tag "${IMAGE}:${VERSION}-$(date "+%Y.%m.%d")" .
 
 if [[ "$BUILDER_EXPORT_ARCHIVE" == true ]]; then
     docker pull --quiet quay.io/skopeo/stable > /dev/null
     rm -f builds/.temp-docker-archive.tar
     for PLATFORM in "${PLATFORMS[@]}"; do
-        docker run --interactive --rm --volume "${PWD}/builds:/builds" \
+        docker run --interactive --network none --rm --volume "${PWD}/builds:/builds" \
             quay.io/skopeo/stable copy --additional-tag "${IMAGE}:latest" --additional-tag \
-            "${IMAGE}:${VERSION}" --additional-tag "${IMAGE}:${VERSION}-base-${BASE_IMAGE_DATE}" \
+            "${IMAGE}:${VERSION}" --additional-tag "${IMAGE}:${VERSION}-$(date "+%Y.%m.%d")" \
             --override-arch "${PLATFORM#*/}" --quiet "oci-archive:${OUTPUT_FILE}:latest" \
             "docker-archive:builds/.temp-docker-archive.tar"
         zstd -19 --force --quiet -T0 builds/.temp-docker-archive.tar \

@@ -1,10 +1,11 @@
-version: "3.8"
-
 services:
 
     encoder:
         container_name: encoder
         build: .
+        mem_limit: 10G
+        devices:
+            - "/dev/dri/renderD128"
         environment:
             - CREATE_FOLDERS=true
             - ENCODER_CPU=true
@@ -14,10 +15,12 @@ services:
                 SERVER_KEY=
             # - SERVER_URL=sftp://sftp@sftp-server:22
             - WORKER_ID=dev
+        read_only: true
+        tmpfs:
+            - /media/workdir
         volumes:
             - "./data-local/data:/media/encoder"
-        devices:
-            - "/dev/dri/renderD128"
+        network_mode: none
 
     # sftp-server:
     #     container_name: sftp-server

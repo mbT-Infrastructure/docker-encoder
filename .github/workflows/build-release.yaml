@@ -55,7 +55,10 @@ jobs:
             - name: Prepare environment
               run: |
                   if [[ -f builder/docker.sh ]]; then
-                      docker buildx create --use
+                      curl --silent --location --output ~/buildkitd-gha.toml \
+                          "https://github.com/mbT-Infrastructure/template-config-files/raw/refs/\
+                  heads/main/debian/buildkit/buildkitd-gha.toml"
+                      docker buildx create --buildkitd-config ~/buildkitd-gha.toml --use
                   fi
             - name: Build
               if: ${{ github.event_name != 'schedule'}}
